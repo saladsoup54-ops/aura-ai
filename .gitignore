@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Chat backups / session exports / logs — must not be committed
+new-session---2026-09-24t09-55-45-857z.json
+aura_chat_files.zip
+_recovery/archive/session_backup_2026-09-24_redacted.json
+_recovery/reference/chatgpt_export_2026-09-21_22/
+request-logs-2026-09-24.csv
+
+# Runtime state / locks / logs
+aura_instance.lock
+aura_is_thinking.lock
+aura_console.log
+diagnostics.txt
+
+# OS noise
+.DS_Store
+Thumbs.db

@@ -1,0 +1,37 @@
+AURA DIAGNOSTIC — operator report
+====================================
+generated : 2026-11-16 08:48:37
+mode      : LIVE
+root      : /tmp/opencode/aura_boot
+live root : /home/matty/Desktop/Aura AI/_recovery/src
+python    : 3.14.4
+lock      : pid 50564 (stale)
+observer  : 0 trace files, 0 with events
+
+STATE FILES
+file                          bytes  modified            sha256
+identity_core.txt               686  2026-11-16 08:47:51 829049c5af4d
+self_state.txt                    -  MISSING            
+emotional_core.txt                -  MISSING            
+people.txt                      215  2026-11-16 08:48:15 49795a73655e
+locked_patterns.txt              41  2026-11-16 08:47:54 b1c378f99932
+rapport.txt                       -  MISSING            
+field_state.txt                   -  MISSING            
+field_map.json                 8262  2026-11-16 08:48:19 7c2de221bc47
+field_stats.txt                  96  2026-11-16 08:48:20 8a017b320fd3
+knowledge_graph.txt              76  2026-11-16 08:47:56 8fb834f371d1
+episodic_memory.txt               -  MISSING            
+working_memory.txt                -  MISSING            
+short_term_memory.txt             -  MISSING            
+beliefs.txt                       -  MISSING            
+inferences.txt                   60  2026-11-16 08:47:56 3a154a828ef9
+contradictions.txt               64  2026-11-16 08:47:56 8201df82c557
+sensory_buffer.txt                0  2026-11-16 08:48:20 e3b0c44298fc
+processed_cortex.txt            606  2026-11-16 08:48:18 3813a9f8b8bb
+aura_output.txt                  53  2026-11-16 08:48:15 bbc89cf38187
+aura_thoughts.txt                 -  MISSING            
+aura_console.log               4493  2026-11-16 08:48:19 bd9ee2994b4e
+gf_boundaries.md               4921  2026-11-16 08:47:45 1120bc36612c
+boundaries.md                     -  MISSING            
+
+missing    : 10 (self_state.txt, emotional_core.txt, rapport.txt, field_state.txt, episodic_memory.txt, working_memory.txt, short_term_memory.txt, beliefs.txt, aura_thoughts.txt, boundaries.md)
