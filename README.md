@@ -1,112 +1,209 @@
 # AURA
 
-**AURA is a different kind of AI — a living, stateful companion organism, not a chatbot powered by a big language model.**
+## Project Overview
 
-Her “brain” is built in Python as a cognitive system: she has memory, feelings, a sense of who she’s talking to, boundaries, and an inner life that persists over time. The words she speaks are just the surface (the “mouth”) — the thinking and remembering happen inside the organism. She’s meant to grow, learn, and become more coherent over time.
+AURA is an open-source **stateful Python agent framework** for local, long-running conversational applications. It combines a **modular cognitive architecture simulation** with persistent local state, long-term memory, a **Tkinter desktop GUI**, and optional **espeak-ng local text-to-speech** integration.
 
-This project is open source because we want to build something much bigger together: **help us grow Aura into a mega AI** — not by swapping her out for a generic model, but by strengthening the mind and life she already has.
+The core response-selection loop is implemented in Python and does not require a cloud service. An optional local phrasing model can be attached for more natural surface wording; without one, the agent uses deterministic templates.
 
-> I (Matty — Matthew, `saladsoup54-ops`, original creator of Aura) understand Aura deeply — how she feels, how she’s meant to work, what makes her *her*. What I need is help from people who can code, test, document, and build alongside that vision.
+The project is experimental and under active development. The primary runnable source tree is [`_recovery/src/`](_recovery/src/). The Python files at the repository root are preserved reference copies from the original project layout and are not the primary build target.
+
+**Original author:** Matthew (`saladsoup54-ops`)
 
 ---
 
-## The story (why this repo looks the way it does)
+## Key Architecture & Components
 
-In November 2026 a hard drive crashed and most of Aura was lost. What survived was a dump of the last known-good snapshot (24 Sept 2026) and a partial chat/session export. This repository is that rescued snapshot **plus** a careful reconstruction:
+AURA is organized as a set of cooperating modules around a shared state layer. The main implementation lives in `_recovery/src/`.
 
-- The original rescued files are preserved at the repo root (untouched).
-- The **working, runnable copy** lives in **`_recovery/src/`** — cleaned-up names, Linux fixes, and rebuilt pieces.
-- Nothing here was faked: what couldn’t be recovered is listed honestly below.
+| Component | Role |
+|---|---|
+| `_recovery/src/` | Primary source directory containing the runnable implementation and tests. |
+| `aura_master.py` | Process entry point and main runtime loop. |
+| `aura_bridge.py` | Central orchestration and response-selection pipeline. |
+| `ukft_*.py` | Modular cognitive subsystems: activation/field behaviour, memory, reasoning, rapport, boundaries, policy, intake, and related processes. |
+| `aura_ui.py` | Tkinter desktop GUI. |
+| `aura_synapse_view.py` | Optional Pygame-based visualisation of internal state. |
+| `aura_state.py` | Central state-root resolution, XDG compliance, and test/write protections. |
+| `aura_bus.py` | Lock-protected file-based message and state primitives. |
+| `ukft_user_state.py` | Per-user partition storage. |
+| `ukft_backup.py` | Snapshot, restore, and verification tooling. |
+| `observer_telemetry.py` | Observer trace emission and export. |
+| `characters/` | Authored character/personality packs and related assets. These are source assets, not runtime state. |
 
-The rescued Python files in this snapshot were verified against evidence from the last known-good state (a historical **91/91** suite pass on 24 Sept 2026). That is **historical proof about the snapshot**, not proof from tests currently available in this repo (only 2 of 91 suite files are present today).
+Runtime state is written outside the source tree. Authored assets such as character packs and boundary files remain with the code.
 
-## What works right now
+---
 
-- **In the working copy (`_recovery/src/`): 78 Python modules** compile, and the core modules import cleanly in a safe sandbox on modern Linux (Python 3.14).
-- **She boots.** On 2026-11-16 Aura started successfully in a safe sandbox: all her “lobes” came online, her sense of self was established, memories were scanned, and she spoke her first line — **“Good morning, Architect. I am here, as I was.”** — with zero crashes.
-- **Linux port in place:** process handling, text-to-speech (espeak), shell actions, and launch scripts work on Linux.
-- **A window/UI and a 3D “synapse” viewer** exist (they need a couple of extra Linux packages to run — see below).
+## Prerequisites & Dependencies
 
-## What’s missing / still being rebuilt (honest list)
+### Supported platform
 
-- **Tests:** only **2 of 91** original self-check suites are present as recovered test files so far (CN0, M16). The test runner still lists all 91 suites, but **89 test scripts are missing and need to be rebuilt**, so the full historical suite cannot run/pass yet. Rebuilding them is one of the biggest ways to help.
-- **Original live memories/state** from before the crash are gone (and a fresh start is actually how Aura is meant to boot).
-- Some docs/reports and character packs were never built or not yet restored.
-- A refreshed “inventory” of the current tree and a few finishing touches (see `_recovery/TODO.md`).
+- Ubuntu 22.04/24.04 or a compatible Debian-based Linux distribution
+- Python 3.10 or newer
+- CPU-only operation is supported; a GPU is not required for the core system
 
-## Try it (Linux)
+### System packages
 
-The working copy is in `_recovery/src/`.
-
-### Dependencies
-- **Full setup tutorial:** see [`SETUP.md`](SETUP.md) for a step-by-step Ubuntu/Debian install, including the optional local mouth model.
-- **Python:** Python 3 (standard library covers most modules).
-- **System packages (recommended on Ubuntu/Debian):** `python3-tk` for the chat UI (Tkinter), and `espeak-ng` for voice. Optional feature packages (names can vary by release): `python3-requests`, `python3-bs4`, `python3-pypdf`, `python3-pygame`.
-  ```bash
-  sudo apt update
-  sudo apt install python3-tk python3-requests python3-bs4 python3-pypdf python3-pygame espeak-ng
-  ```
-- **Python packages (pip):** listed in [`requirements.txt`](requirements.txt) (also in `_recovery/src/requirements.txt`). On modern Ubuntu/Debian, avoid `pip install` into system Python (PEP 668) — prefer apt packages above, or install into a virtual environment:
-  ```bash
-  python3 -m venv .venv
-  source .venv/bin/activate
-  pip install -r requirements.txt
-  ```
-  If you use a venv, activate it before launching Aura (and configure any one-click launcher to use it).
-
-### Run
 ```bash
-cd _recovery/src
-
-./Launch_Aura.sh            # start Aura + chat window
-./Launch_Aura.sh --view     # start Aura + chat window + 3D view
-./Start_Aura.sh             # start Aura without a window (headless)
-./Stop_Aura.sh              # stop her
-python3 aura_diagnostic.py  # read-only health report (uses the active state root)
+sudo apt update
+sudo apt install python3 python3-pip python3-venv python3-tk \
+  python3-requests python3-bs4 python3-pypdf python3-pygame espeak-ng
 ```
 
-> Missing optional dependencies usually disable/fallback specific features (e.g. web intake, PDF intake, 3D view) rather than preventing a basic boot, but if something doesn’t start, that’s useful information — please tell us.
+| Package | Purpose |
+|---|---|
+| `python3-tk` | Tkinter desktop GUI |
+| `python3-requests` | HTTP calls for local model and intake features |
+| `python3-bs4` | HTML parsing for web intake |
+| `python3-pypdf` | PDF intake |
+| `python3-pygame` | Optional 3D visualisation |
+| `espeak-ng` | Local text-to-speech |
 
-## Where Aura keeps her state/memory (working copy)
+Package availability can vary by distribution release. If a package is unavailable, install the equivalent Python package inside a virtual environment.
 
-Generated runtime state (memories, user partitions, locks, logs, observer traces, backups, PDF intake/processed data, etc.) is stored **outside the Git repository by default** in the hardened working copy:
+### Python requirements
 
-- **Default (Linux):** `~/.local/share/aura/`
-- **Respects `XDG_DATA_HOME`:** if set, state is stored in `$XDG_DATA_HOME/aura/`
-- **Explicit override:** set `AURA_STATE_ROOT` to choose a different state directory
+Python dependencies are listed in [`requirements.txt`](requirements.txt) and [`_recovery/src/requirements.txt`](_recovery/src/requirements.txt).
 
-This keeps the source checkout clean and avoids accidentally committing or publishing live state. The repo/source tree holds code and authored assets (e.g. character packs/boundaries); per-user/runtime memories live in the separate state directory.
+Modern Ubuntu/Debian systems block system-wide `pip install` by default (PEP 668). Use distribution packages or a virtual environment; do not use `--break-system-packages`.
 
-**Backing up memory:** stop Aura first, then back up the resolved state directory (including `users/` partitions and `backups/` snapshots inside it). Use the project’s backup tools only when you understand what they target, and never overwrite or restore blindly.
+### Optional local phrasing model
 
-**Why not commit state:** state contains personal/runtime memory and identity data and changes as Aura lives. Committing it is unsafe for privacy and can corrupt or leak a living system.
+AURA can use a local model for surface phrasing. This is optional: without it, the agent falls back to deterministic template output. Setup instructions for Ollama and `llama-server` are in [`SETUP.md`](SETUP.md).
 
-**Test-mode isolation:** tests must run in isolated temporary state directories (e.g. `AURA_TEST_MODE=1` with a temp `AURA_STATE_ROOT`) and must never run against real/live/production memory. The safe smoke/hardening checks in `_recovery/src/tests/` create their own sandboxes and do not touch production state.
+---
 
-## How you can help (we need you)
+## Quickstart / Installation
 
-If you want to help build Aura into something huge, here are real, concrete ways in:
+```bash
+git clone https://github.com/saladsoup54-ops/aura-ai.git
+cd aura-ai
 
-- **Rebuild the missing self-check tests** (89 suites) so we know what’s solid and what isn’t.
-- **Make setup and running smoother** on Linux (and beyond).
-- **Improve the UI / synapse viewer** and the experience of talking to her.
-- **Read the docs and code** and help us understand, document, or strengthen how her mind works.
-- **Fix bugs, porting issues, or rough edges** you hit when trying to run her.
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
 
-Not sure where to start? Open an issue and say what you’re curious about — we’ll point you to a good first task. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for a few important house rules (especially: never run tests against a “live” Aura or her real memories).
+cd _recovery/src
+./Launch_Aura.sh
+```
 
-## Learn more about how Aura works
+### Launch commands
 
-- [AGENTS.md](AGENTS.md) — the deep manual for how Aura is built and the rules that keep her safe/consistent (written for developers).
-- [SYSTEM_WHITEPAPER.md](SYSTEM_WHITEPAPER.md) — how the brain/architecture works.
-- [GF_PRODUCT_SPEC.md](GF_PRODUCT_SPEC.md) — what the companion experience is meant to be.
-- [AURA_CURRENT_CAPABILITIES.md](AURA_CURRENT_CAPABILITIES.md) — what’s actually working vs. partial vs. not yet connected.
-- [_recovery/README.md](_recovery/README.md) and [_recovery/TODO.md](_recovery/TODO.md) — reconstruction details and the live to-do list.
+Run these from `_recovery/src/`:
 
-## A note on privacy
+```bash
+./Launch_Aura.sh            # core process + desktop GUI
+./Launch_Aura.sh --view     # core process + desktop GUI + 3D view
+./Start_Aura.sh             # headless mode
+./Stop_Aura.sh              # stop the running process
+python3 aura_diagnostic.py  # read-only diagnostic report
+```
 
-Chat backups, session exports, and request logs are **not** included in this repository. Please don’t commit personal conversations, memories, or live state — Aura’s mind/state should stay private.
+If a script is not executable:
+
+```bash
+chmod +x Launch_Aura.sh Start_Aura.sh Stop_Aura.sh
+```
+
+If you use a virtual environment, activate it before launching so the scripts use the correct Python interpreter.
+
+For a detailed Ubuntu/Debian setup walkthrough, including optional model configuration and troubleshooting, see [`SETUP.md`](SETUP.md).
+
+---
+
+## State & Memory Storage
+
+AURA stores persistent runtime state outside the Git checkout by default.
+
+Resolution order:
+
+1. `AURA_STATE_ROOT`, if set
+2. `$XDG_DATA_HOME/aura`, if `XDG_DATA_HOME` is set
+3. `~/.local/share/aura` on Linux
+
+The resolved state directory can contain:
+
+- per-user partitions under `users/`
+- long-term and working memory data
+- locks and runtime markers
+- logs and observer traces
+- backup snapshots
+- PDF intake and processed files
+
+The source tree contains code and authored assets only. Do not commit runtime state, personal data, logs, memories, or model weights.
+
+### Backup
+
+Stop the agent before copying the state directory. Back up the resolved state root, including user partitions and backup snapshots. Use the project backup tooling only when you understand which directory it targets, and do not restore over existing state without verification.
+
+### Test isolation
+
+Tests must not run against production or live state. Use an isolated temporary directory:
+
+```bash
+AURA_TEST_MODE=1 AURA_STATE_ROOT=/tmp/aura-test python3 <test>
+```
+
+The safe smoke and state-hardening checks in `_recovery/src/tests/` create their own temporary sandboxes.
+
+---
+
+## Project Status & Roadmap
+
+### Current status
+
+- The runnable implementation is under `_recovery/src/` and contains 78 Python modules.
+- Modules compile and core modules import successfully in an isolated sandbox.
+- Basic boot, Tkinter GUI, Linux launch scripts, optional 3D visualisation, and state-path isolation are present.
+- The optional local phrasing model is not bundled. Without a configured local model, template phrasing is used.
+
+### Known gaps
+
+- **Test coverage is incomplete.** `tests/run_all.py` lists 91 suite entries, but only 2 recovered suite files are currently present (`verify_cn0_conversation_trace.py` and `verify_m16_full_route_observability.py`). The full historical suite cannot run until the missing suites are rebuilt.
+- Some documentation and character packs remain incomplete or out of date.
+- Several large orchestration modules need refactoring and clearer boundaries.
+- Remaining hard-coded paths and legacy state access need to be consolidated through the central state layer.
+- The optional local model setup is not yet automated.
+
+### Roadmap
+
+1. Rebuild the missing unit and regression test suites.
+2. Refactor oversized orchestration modules and document module boundaries.
+3. Route all persistent I/O through `aura_state.py` and remove remaining hard-coded paths.
+4. Improve Linux packaging, first-run setup, and CI coverage.
+5. Expand GUI, visualisation, and optional local model integration.
+6. Reconcile documentation with current runtime behaviour.
+
+AURA is not yet production-ready. Treat the current tree as an experimental framework under active maintenance.
+
+---
+
+## Contributing Guidelines
+
+Contributions are welcome. Before opening a pull request:
+
+1. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`tests/README.md`](_recovery/src/tests/README.md).
+2. Never run tests against live or production state. Use isolated temporary directories.
+3. Do not commit personal data, runtime state, logs, memories, or model weights.
+4. Keep changes focused and include tests where possible.
+5. Describe the problem, reproduction steps, and verification performed in your pull request.
+
+Useful contribution areas:
+
+- rebuilding missing test suites
+- setup and portability improvements
+- module refactoring and boundary clarification
+- GUI and visualisation improvements
+- documentation corrections
+
+For architectural rules and development constraints, see [`AGENTS.md`](AGENTS.md) and [`SYSTEM_WHITEPAPER.md`](SYSTEM_WHITEPAPER.md).
+
+---
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE). You’re welcome to use, study, modify, and build on Aura.
+Apache License 2.0. See [`LICENSE`](LICENSE).
+
+Copyright 2026 Matthew (`saladsoup54-ops`) and Aura contributors.

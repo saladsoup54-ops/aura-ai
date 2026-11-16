@@ -14,6 +14,8 @@ import pygame
 from dataclasses import dataclass
 from typing import Optional, Dict, List, Tuple
 
+from aura_state import resolve_state_path as _state_path
+
 # ── CONFIG ────────────────────────────────────────────────────────
 DATA_FILE       = "field_map.json"
 GRAPH_FILE      = "knowledge_graph.txt"   # V5: glossary definitions
@@ -112,9 +114,24 @@ def activation_color(act: float) -> Tuple[int, int, int]:
     return anchors[-1][1]
 
 # ── GLOSSARY / IDENTITY LOADERS (pure, testable) ──────────────────
+def _resolve(path: Optional[str]) -> Optional[str]:
+    """Resolve a runtime-state path against AURA's active state root.
+
+    Absolute paths are preserved so tests and tooling can point at
+    temporary fixtures without being redirected into production state.
+    """
+    if not path:
+        return path
+    try:
+        return _state_path(path)
+    except Exception:
+        return path
+
+
 def load_glossary(path: str = GRAPH_FILE) -> Dict[str, Dict[str, List[Tuple[str, str, float]]]]:
     """Parse knowledge_graph.txt into {word: {"out": [(rel, y, conf)], "in": [(rel, x, conf)]}}."""
     out: Dict[str, Dict[str, List[Tuple[str, str, float]]]] = {}
+    path = _resolve(path) or ""
     try:
         if not os.path.exists(path):
             return out
@@ -143,6 +160,7 @@ def load_glossary(path: str = GRAPH_FILE) -> Dict[str, Dict[str, List[Tuple[str,
 def load_identity(path: str = IDENTITY_FILE) -> Dict[str, float]:
     """{word: strength} from identity_core.txt."""
     ident: Dict[str, float] = {}
+    path = _resolve(path) or ""
     try:
         if not os.path.exists(path):
             return ident
@@ -326,6 +344,7 @@ class SynapseVisualizer:
     # ── MONITOR TABS ──────────────────────────────────────────────
     def _read_tail(self, path: Optional[str], n: int = 400) -> List[str]:
         """Last `n` lines of a file, reading only the file's tail."""
+        path = _resolve(path)
         if not path or not os.path.exists(path):
             return []
         try:
@@ -683,8 +702,9 @@ class SynapseVisualizer:
             # ── Reload data every N frames (not every frame) ──────
             if self.frame % RELOAD_EVERY == 0:
                 try:
-                    if os.path.exists(DATA_FILE):
-                        with open(DATA_FILE, "r") as f:
+                    data_path = _resolve(DATA_FILE)
+                    if data_path and os.path.exists(data_path):
+                        with open(data_path, "r") as f:
                             self.cached_data = json.load(f)
                 except Exception:
                     pass
@@ -1046,6 +1066,11 @@ def build_diagnostics_text(root: Optional[str] = None) -> str:
 def export_diagnostics(path: str = "diagnostics.txt") -> str:
     """Write the route-evidence export; returns the path written."""
     text = build_diagnostics_text()
+    path = _resolve(path) or path
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    except Exception:
+        pass
     with open(path, "w", encoding="utf-8") as f:
         f.write(text + "\n")
     return path
