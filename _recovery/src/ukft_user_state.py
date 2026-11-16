@@ -94,20 +94,17 @@ SYSTEM_FILES = [
 class UserStateManager:
     """
     Manages per-user state directories. Each user_id gets:
-      users/<user_id>/
-        locked_patterns.txt
-        identity_core.txt
-        ... (all USER_STATE_FILES)
-    
-    Shared engine models live at repo root (rebuilt from vault on demand).
-    System files live at repo root (single organism).
+      <state_root>/users/<user_id>/...
+    Shared engine models and system runtime files live under the active
+    state root (outside the repo by default in production).
     """
     
     def __init__(self, base_dir: str = "users"):
-        from aura_state import deny_live_write
-        deny_live_write(base_dir)
-        self.base_dir = Path(base_dir)
-        self.base_dir.mkdir(exist_ok=True)
+        from aura_state import deny_live_write, resolve_state_path
+        resolved = resolve_state_path(base_dir)
+        deny_live_write(resolved)
+        self.base_dir = Path(resolved)
+        self.base_dir.mkdir(parents=True, exist_ok=True)
         self._locks: Dict[str, threading.Lock] = {}
         self._global_lock = threading.Lock()
     
@@ -204,19 +201,26 @@ class UserStateManager:
     
     def migrate_from_global(self, user_id: str) -> Dict[str, int]:
         """
-        One-time migration: move global state files into user's partition.
-        Returns dict of {filename: bytes_moved}.
+        One-time migration: move global state files (in active state root)
+        into user's partition. Returns dict of {filename: bytes_moved}.
+        Does not auto-run at startup; explicit operation only.
         """
+        from aura_state import resolve_state_path, deny_live_write
         moved = {}
         udir = self.ensure_user(user_id)
         for fname in USER_STATE_FILES:
-            src = Path(fname)
+            src = Path(resolve_state_path(fname))
             if src.exists() and src.stat().st_size > 0:
                 dst = udir / fname
                 if not dst.exists():
                     try:
+                        deny_live_write(src)
+                        deny_live_write(dst)
                         shutil.move(str(src), str(dst))
-                        moved[fname] = src.stat().st_size
+                        try:
+                            moved[fname] = dst.stat().st_size
+                        except OSError:
+                            moved[fname] = 0
                     except OSError:
                         pass
         return moved
@@ -350,32 +354,41 @@ class UserStateManager:
     
     def snapshot_user(self, user_id: str, backup_mgr) -> Dict:
         """Snapshot a user's state using the backup manager."""
+        from aura_state import resolve_state_path, deny_live_write
         udir = self.user_dir(user_id)
         if not udir.exists():
             return {"error": "user not found"}
         
-        # Temporarily copy user files to root for backup manager
-        # (backup manager expects files at repo root)
+        # Temporarily copy user files into the active state root for the
+        # backup manager (which snapshots named state files there).
         restored = {}
         try:
             for fname in USER_STATE_FILES:
                 src = udir / fname
                 if src.exists():
-                    shutil.copy2(src, fname)
-                    restored[fname] = True
+                    dst = Path(resolve_state_path(fname))
+                    deny_live_write(dst)
+                    shutil.copy2(src, dst)
+                    restored[fname] = dst
             
             # Run backup
             result = backup_mgr.snapshot()
             
             # Clean up temp copies
-            for fname in restored:
-                Path(fname).unlink(missing_ok=True)
+            for fname, dst in restored.items():
+                try:
+                    dst.unlink(missing_ok=True)
+                except Exception:
+                    pass
             
             return {"user": user_id, "backup": result}
         except Exception as e:
             # Cleanup on error
-            for fname in restored:
-                Path(fname).unlink(missing_ok=True)
+            for fname, dst in restored.items():
+                try:
+                    dst.unlink(missing_ok=True)
+                except Exception:
+                    pass
             return {"error": str(e)}
     
     def delete_user(self, user_id: str) -> bool:

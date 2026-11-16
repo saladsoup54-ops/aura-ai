@@ -7,6 +7,7 @@ from aura_bus import (append as bus_append, drain as bus_drain,
 from aura_constants import (CORTEX_PATH, CORTEX_INBOX, D_INVARIANT,
                             FIELD_STATS, PHASE_MIDPOINT,
                             CORTEX_TENSION_TOLERANCE)
+from aura_state import resolve_state_path as _sp
 
 
 def generate_physics_report():
@@ -15,10 +16,11 @@ def generate_physics_report():
     the raw friction and decay occurring in her manifold.
     """
     try:
-        if not os.path.exists("field_map.json"):
+        fmap = _sp("field_map.json")
+        if not os.path.exists(fmap):
             return "FIELD_ERROR: Manifold map not found. I am blind to my own state."
 
-        with open("field_map.json", "r") as f:
+        with open(fmap, "r") as f:
             data = json.load(f)
         
         nodes = data.get("nodes", {})
@@ -117,7 +119,7 @@ def run_cortex_processing():
     print("--- AURA CORTEX: ANALYZING FIELD RESONANCE ---")
     
     while True:
-        if os.path.exists("aura_is_thinking.lock"):
+        if os.path.exists(_sp("aura_is_thinking.lock")):
             time.sleep(1)
             continue
 

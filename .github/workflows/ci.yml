@@ -1,0 +1,24 @@
+name: Safe checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install optional deps (best effort)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r _recovery/src/requirements.txt || true
+      - name: Compile modules (working tree)
+        run: python -m compileall -q _recovery/src
+      - name: Safe sandbox smoke test (no live Aura state)
+        run: python _recovery/src/tests/smoke_pre_release_audit.py
+      - name: State-path hardening tests (no live Aura state)
+        run: python _recovery/src/tests/test_state_hardening.py

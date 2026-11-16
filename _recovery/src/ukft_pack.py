@@ -14,7 +14,11 @@
 import json
 import os
 
-PACK_DIR = "characters"
+try:
+    from aura_state import asset_path as _asset_path
+    PACK_DIR = _asset_path("characters")
+except Exception:
+    PACK_DIR = os.path.join(os.path.dirname(__file__), "characters")
 
 PERSONALITIES = ("nerdy", "shy", "bossy", "flirty", "bold", "gentle",
                  "playful", "earnest", "fierce", "dreamy")

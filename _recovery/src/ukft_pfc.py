@@ -5,6 +5,7 @@ import time
 from aura_bus import read as bus_read, write as bus_write
 from aura_constants import (VAULT_FILE, PFC_SIGNAL_FILE, PFC_FOCUS_FILE,
                              HYPO_SIGNAL_FILE)
+from aura_state import resolve_state_path as _sp
 
 FOCUS_DURATION   = 300.0   # seconds a focus directive is held
 FOCUS_STRENGTH   = 0.15    # per-cycle boost to the focused concept
@@ -162,7 +163,7 @@ def attention_cycle(field=None, temporal=None):
             from ukft_temporal_lobe import TemporalLobe
             if not hasattr(attention_cycle, "_lobe"):
                 lobe = TemporalLobe()
-                if os.path.exists("temporal_links.txt"):
+                if os.path.exists(_sp("temporal_links.txt")):
                     try:
                         lobe.load()
                     except Exception:

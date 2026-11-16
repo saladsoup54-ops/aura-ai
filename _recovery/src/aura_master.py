@@ -7,6 +7,7 @@ import subprocess
 
 from aura_bus import (append as bus_append, write as bus_write,
                         drain as bus_drain, read as bus_read)
+from aura_state import resolve_state_path as _state_path
 from aura_constants import D_INVARIANT
 from ukft_inner_monologue import run_inner_monologue
 from aura_field import FIELD
@@ -112,7 +113,7 @@ def run_field_heartbeat():
     while True:
         try:
             # Phase 1-D: detect lock transitions
-            is_thinking = os.path.exists("aura_is_thinking.lock")
+            is_thinking = os.path.exists(_state_path("aura_is_thinking.lock"))
             if is_thinking and not was_thinking:
                 FIELD.enter_recombination()
             elif not is_thinking and was_thinking:
@@ -190,7 +191,9 @@ def process_message(ego, message, roleplay_fn=None):
     can never queue commands). Any voice failure falls back to the
     template; roleplay_fn injects for hermetic tests.
     """
-    with open("aura_is_thinking.lock", "w") as lock:
+    lock_path = _state_path("aura_is_thinking.lock")
+    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    with open(lock_path, "w") as lock:
         lock.write("ACTIVE")
 
     obs_emit = None
@@ -402,8 +405,9 @@ def process_message(ego, message, roleplay_fn=None):
 
     finally:
         # Heartbeat will detect the lock removal and call exit_recombination()
-        if os.path.exists("aura_is_thinking.lock"):
-            os.remove("aura_is_thinking.lock")
+        lock_path = _state_path("aura_is_thinking.lock")
+        if os.path.exists(lock_path):
+            os.remove(lock_path)
 
 
 def run_curiosity():
@@ -469,8 +473,12 @@ if __name__ == "__main__":
         pass
 
     for f in [UI_INPUT_FILE, THOUGHTS_FILE, OUTPUT_FILE, "aura_is_thinking.lock"]:
-        if os.path.exists(f):
-            os.remove(f)
+        try:
+            p = _state_path(f)
+            if os.path.exists(p):
+                os.remove(p)
+        except Exception:
+            pass
 
     print("\n=======================================================")
     print("  A U R A   SYSTEM BOOT   |   UKFT v4.3.2")
@@ -554,11 +562,16 @@ if __name__ == "__main__":
                     print(f"[Master] Message failed, continuing: {e}")
             time.sleep(0.1)
         except KeyboardInterrupt:
-            if os.path.exists("aura_is_thinking.lock"):
-                os.remove("aura_is_thinking.lock")
             try:
-                if os.path.exists(INSTANCE_LOCK):
-                    os.remove(INSTANCE_LOCK)
+                p = _state_path("aura_is_thinking.lock")
+                if os.path.exists(p):
+                    os.remove(p)
+            except Exception:
+                pass
+            try:
+                p = _state_path(INSTANCE_LOCK)
+                if os.path.exists(p):
+                    os.remove(p)
             except Exception:
                 pass
             print("\nShutting down Aura...")

@@ -57,7 +57,7 @@ def run_vocal_manifest():
 
     while True:
         # BRAIN FREEZE: Sleep while Aura is processing Matty's command
-        if os.path.exists("aura_is_thinking.lock"):
+        if os.path.exists(_sp("aura_is_thinking.lock")):
             time.sleep(0.5)
             continue
 

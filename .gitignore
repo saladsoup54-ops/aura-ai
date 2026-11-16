@@ -13,11 +13,77 @@ _recovery/archive/session_backup_2026-09-24_redacted.json
 _recovery/reference/chatgpt_export_2026-09-21_22/
 request-logs-2026-09-24.csv
 
-# Runtime state / locks / logs
-aura_instance.lock
+# Generated runtime state (created when Aura runs) — keep out of git.
+# Precise names/patterns only (do NOT ignore all *.txt/*.md: docs must stay tracked).
+# Applies in root and in _recovery/src working tree.
+
+# Runtime files
+ui_input.txt
+aura_thoughts.txt
+aura_output.txt
 aura_is_thinking.lock
+aura_instance.lock
 aura_console.log
 diagnostics.txt
+roleplay_debug_once.json
+locked_patterns.txt
+locked_patterns_legacy.txt
+vault_compacted_v2.flag
+sensory_buffer.txt
+cortex_inbox.txt
+processed_cortex.txt
+short_term_memory.txt
+parietal_inbox.txt
+parietal_links.txt
+temporal_links.txt
+basal_ganglia_log.txt
+trigram_model.txt
+working_memory.txt
+discoveries.txt
+identity_core.txt
+sleep_state.txt
+sleep_log.txt
+episodic_memory.txt
+ebbinghaus_traces.txt
+forgotten_memories.txt
+emotional_core.txt
+inner_monologue.txt
+field_state.txt
+field_stats.txt
+field_map.json
+hypothalamus_signal.txt
+pfc_signal.txt
+pfc_focus.txt
+last_architect_input.txt
+internal_stimulus.txt
+dream_log.txt
+extracted_relations.txt
+knowledge_graph.txt
+inferences.txt
+contradictions.txt
+knowledge_gaps.txt
+evaluation_report.txt
+relation_audit_sample.txt
+action_log.txt
+pending_action.txt
+people.txt
+pending_people.txt
+self_state.txt
+threads.txt
+beliefs.txt
+pending_belief.txt
+lessons.txt
+rapport.txt
+register_state.txt
+
+# Runtime directories (per-user state, backups, intake/output, disposable)
+backups/
+users/
+observer_trace/
+pdf_intake/
+pdf_processed/
+_review_packet/
+users_probe/
 
 # OS noise
 .DS_Store

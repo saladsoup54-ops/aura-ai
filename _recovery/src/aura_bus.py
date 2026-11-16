@@ -11,23 +11,44 @@
 # Every shared file contract (sensory_buffer, cortex_inbox,
 # processed_cortex, short_term_memory, parietal_inbox, the vault)
 # flows through these primitives.
+#
+# HARDENING: relative/state paths resolve through the active state root
+# (AURA_STATE_ROOT / XDG default outside the repo) so runtime state does
+# not land in the Git checkout regardless of launch CWD.
 # ===========================================
 
 import os
 import threading
 from contextlib import contextmanager
 
-from aura_state import deny_live_write
+from aura_state import deny_live_write, resolve_state_path
 
 _locks = {}
 _locks_guard = threading.Lock()
 
 
+def _path(path):
+    try:
+        return resolve_state_path(path)
+    except Exception:
+        return path
+
+
 def _lock_for(path):
+    key = _path(path)
     with _locks_guard:
-        if path not in _locks:
-            _locks[path] = threading.RLock()
-        return _locks[path]
+        if key not in _locks:
+            _locks[key] = threading.RLock()
+        return _locks[key]
+
+
+def _ensure_parent(path):
+    try:
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+    except Exception:
+        pass
 
 
 @contextmanager
@@ -41,10 +62,12 @@ def append(path, line, encoding="utf-8"):
     """Append one intact line under the path lock."""
     if not line:
         return False
+    path = _path(path)
     deny_live_write(path)
     text = line if line.endswith("\n") else line + "\n"
     try:
         with _lock_for(path):
+            _ensure_parent(path)
             with open(path, "a", encoding=encoding) as f:
                 f.write(text)
         return True
@@ -57,6 +80,7 @@ def drain(path, encoding="utf-8"):
     Atomically read every line and truncate the file.  Returns the list
     of non-empty lines; a missing file drains to [].
     """
+    path = _path(path)
     deny_live_write(path)
     with _lock_for(path):
         try:
@@ -64,6 +88,7 @@ def drain(path, encoding="utf-8"):
                 return []
             with open(path, "r", encoding=encoding, errors="ignore") as f:
                 content = f.read()
+            _ensure_parent(path)
             with open(path, "w", encoding=encoding) as f:
                 f.truncate()
             return [l for l in content.splitlines() if l.strip()]
@@ -73,9 +98,11 @@ def drain(path, encoding="utf-8"):
 
 def write(path, text, encoding="utf-8"):
     """Serialised whole-file write (signals, state files)."""
+    path = _path(path)
     deny_live_write(path)
     try:
         with _lock_for(path):
+            _ensure_parent(path)
             with open(path, "w", encoding=encoding) as f:
                 f.write(text)
         return True
@@ -85,6 +112,7 @@ def write(path, text, encoding="utf-8"):
 
 def read(path, default="", encoding="utf-8"):
     """Serialised whole-file read."""
+    path = _path(path)
     try:
         with _lock_for(path):
             if not os.path.exists(path):
@@ -93,3 +121,4 @@ def read(path, default="", encoding="utf-8"):
                 return f.read()
     except Exception:
         return default
+

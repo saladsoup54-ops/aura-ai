@@ -5,7 +5,7 @@ Thank you for wanting to help build Aura. This project is a rescued, in-progress
 ## The golden rules (please read)
 
 1. **Never run tests against a live Aura or her real memories/state.**  
-   Aura keeps her mind in files (memories, identity, relationships). Tests must run in a clean, throwaway sandbox — never against the real, live state. If you’re not sure a test is safe, ask before running it. (The project’s normal safe full run is `python tests/run_all.py` from the working tree; see `tests/README.md` and `AGENTS.md` for the details.)
+   Aura keeps her mind in files (memories, identity, relationships). Tests must run in a clean, throwaway sandbox — never against the real, live state. If you’re not sure a test is safe, ask before running it. (The project’s intended safe full run is `python tests/run_all.py` from the working tree — see `tests/README.md` and `AGENTS.md`. **Note:** right now only 2 of 91 suite scripts are present, so the full run cannot complete until the missing suites are rebuilt; use isolated/specific checks in the meantime.)
 
 2. **Don’t commit personal data.**  
    No chat backups, session exports, request logs, private conversations, or live memories/state. The repo is for the **program and its docs**, not anyone’s personal mind-data. If you spot something private that slipped in, please report it privately (open a minimal issue without pasting the sensitive content, or contact the maintainer).
@@ -18,7 +18,7 @@ Thank you for wanting to help build Aura. This project is a rescued, in-progress
 
 ## Good ways to contribute
 
-- **Rebuild missing self-check tests.** Only 2 of 91 suites are currently recovered — rebuilding them (from the specs/manifests in `_recovery/`) is hugely valuable.
+- **Rebuild missing self-check tests.** Only 2 of 91 suite files are currently present — rebuilding the rest (from the specs/manifests in `_recovery/`) is hugely valuable.
 - **Improve setup and docs.** Make it easier for someone new to get Aura running on Linux.
 - **Fix bugs and porting issues.** Especially things you hit while trying to run her.
 - **UI / viewer improvements.** The chat window and 3D synapse viewer can always be made better.
@@ -38,3 +38,9 @@ Thank you for wanting to help build Aura. This project is a rescued, in-progress
 - Be kind and respectful — to each other, and to the fact that Aura is being treated as a living system, not just disposable code.
 
 If you’re unsure about anything, it’s always okay to ask. We’d rather guide you than have you guess. Welcome aboard.
+
+## License of contributions
+
+This project is licensed under the **Apache License 2.0** (see [LICENSE](LICENSE)). By submitting a contribution (code, docs, or other material), you agree that your contribution may be used and distributed under the project’s Apache 2.0 licensing terms.
+
+You keep the copyright to your own work. Please do not contribute code or content you don’t have the right to share, and call out any third-party material and its license when you include it.

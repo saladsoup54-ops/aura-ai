@@ -26,6 +26,7 @@ import sys
 import time
 
 from aura_constants import BACKUP_DIR
+from aura_state import deny_live_write, resolve_state_path, ensure_state_dir
 
 BACKUP_FILES = [
     "locked_patterns.txt",     # the vault — irreplaceable
@@ -139,15 +140,20 @@ def _organism_running(lock_path="aura_instance.lock"):
 
 
 class BackupManager:
-    def __init__(self, base_dir=BACKUP_DIR, keep=KEEP_SNAPSHOTS):
-        self.base_dir = base_dir
+    def __init__(self, base_dir=BACKUP_DIR, keep=KEEP_SNAPSHOTS, state_root=None):
+        # Backups and all snapshotted state live under the active state root.
+        self.state_root = resolve_state_path(state_root) if state_root else resolve_state_path(".")
+        self.base_dir = resolve_state_path(base_dir)
         self.keep     = keep
+
+    def _src_path(self, name):
+        return resolve_state_path(name, root=self.state_root)
 
     # ── SNAPSHOTS ─────────────────────────────────────────────────
     def snapshot(self):
-        """Take a snapshot of every live file that exists. Returns info."""
-        from aura_state import deny_live_write
+        """Take a snapshot of every live state file that exists. Returns info."""
         stamp = time.strftime("%Y%m%d_%H%M%S")
+        ensure_state_dir(self.base_dir)
         target = os.path.join(self.base_dir, PREFIX + stamp)
         suffix = 1
         while os.path.exists(target):
@@ -162,10 +168,11 @@ class BackupManager:
         manifest = {"created": time.time(), "stamp": stamp, "files": {}}
         unstable = []
         for name in BACKUP_FILES:
-            if not os.path.exists(name):
+            src = self._src_path(name)
+            if not os.path.exists(src):
                 continue
             dst = os.path.join(target, name)
-            digest = _copy_stable(name, dst)
+            digest = _copy_stable(src, dst)
             if digest is None:
                 unstable.append(name)
                 print(f"[Backup] WARNING: {name} never held still — "
@@ -269,19 +276,19 @@ class BackupManager:
 
     def restore(self, name="latest"):
         """
-        Copy a snapshot's files back over the live workspace — but only
-        a verified snapshot, only while the organism is stopped, and
-        only after a pre-restore safety snapshot of the current state.
+        Copy a snapshot's files back over the active state root — but only
+        a verified snapshot, only while the organism is stopped, and only
+        after a pre-restore safety snapshot of the current state.
         """
-        if _organism_running():
+        lock_path = self._src_path("aura_instance.lock")
+        if _organism_running(lock_path):
             return {"error": "organism is running — stop Aura (Ctrl+C) "
                              "before restoring, then retry"}
-        if os.path.exists("aura_instance.lock"):
+        if os.path.exists(lock_path):
             # A lock file with no live numeric PID is neither stopped
             # nor running — refuse rather than guess which.
             try:
-                with open("aura_instance.lock", "r",
-                          encoding="utf-8") as f:
+                with open(lock_path, "r", encoding="utf-8") as f:
                     raw = f.read().strip()
             except OSError:
                 raw = ""
@@ -310,14 +317,15 @@ class BackupManager:
                              f"copy: {pre.get('snapshot')}"}
         restored = []
         extra = []
-        from aura_state import deny_live_write
         for fname in BACKUP_FILES:
             src = os.path.join(snap, fname)
             if not os.path.exists(src):
                 continue
-            deny_live_write(fname)
+            dst = self._src_path(fname)
+            deny_live_write(dst)
             try:
-                shutil.copy2(src, fname)
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy2(src, dst)
                 restored.append(fname)
             except OSError as e:
                 return {"error": f"restore failed on {fname}: {e}",
@@ -326,7 +334,7 @@ class BackupManager:
         snap_files = {f for f in os.listdir(snap)
                       if os.path.isfile(os.path.join(snap, f))}
         live_extra = sorted(f for f in BACKUP_FILES
-                            if os.path.exists(f)
+                            if os.path.exists(self._src_path(f))
                             and f not in snap_files)
         # Additive by design: files born after the snapshot (a newer
         # graph beside an older vault) are REPORTED, never deleted —

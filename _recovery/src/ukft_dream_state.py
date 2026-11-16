@@ -8,6 +8,7 @@ from aura_constants import (D_INVARIANT as UKFT_CONSTANT, VAULT_FILE,
                              HYPO_SIGNAL_FILE, DREAM_LOG,
                              FIELD_NODE_CEILING)
 from aura_field import FIELD
+from aura_state import resolve_state_path as _sp
 from aura_vault_io import iter_anchors, parse_vault_line, append_anchor
 
 DREAM_CONCEPTS     = ["TOPOLOGY", "RESONANCE", "STABILITY", "ENTROPY", "MANIFOLD", "VISCOSITY"]
@@ -162,7 +163,7 @@ def generate_dream_pattern():
             last_cortex_flush[0] = time.time()
 
     while True:
-        if os.path.exists("aura_is_thinking.lock"):
+        if os.path.exists(_sp("aura_is_thinking.lock")):
             time.sleep(0.5)
             continue
 

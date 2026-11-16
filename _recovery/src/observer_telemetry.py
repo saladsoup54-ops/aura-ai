@@ -19,11 +19,17 @@ from typing import Optional, Dict, Any, List
 # Fail-safe import of state root (observer must never crash brain)
 try:
     import aura_state
-    ACTIVE_ROOT = aura_state.active_root()
-    IN_TEST = aura_state.in_test_mode()
+    def _active_root():
+        return aura_state.active_root()
+    def _in_test():
+        return aura_state.in_test_mode()
 except Exception:
-    ACTIVE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    IN_TEST = False
+    def _active_root():
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    def _in_test():
+        return False
+ACTIVE_ROOT = None  # resolved dynamically
+IN_TEST = False
 
 # Mutable operator/test override. The environment switch is read at emission
 # time so enabling/disabling telemetry never requires a process restart.
@@ -81,18 +87,14 @@ def _safe_user_id(user_id: str) -> str:
 
 
 def _partition_dir(user_id: str) -> str:
-    # Partition isolation: under users/<id>/observer_trace
-    # If active root is live and partition doesn't exist yet,
-    # create observer dir only (never create users dir if missing
-    # — respect existing partition tree).
-    root = ACTIVE_ROOT
-    # If user partition exists, store inside it; else root-level
-    # temporary observer dir (test isolation)
+    # Partition isolation: under <state_root>/users/<id>/observer_trace.
+    # If the user partition exists, store inside it; else fallback to
+    # <state_root>/observer_trace/<id> (observer-only, isolated).
+    root = _active_root()
     safe_id = _safe_user_id(user_id)
     partition_path = os.path.join(root, "users", safe_id, TRACE_DIR)
     if os.path.isdir(os.path.dirname(partition_path)):
         return partition_path
-    # Fallback: observer root at active root (isolated from vault)
     return os.path.join(root, TRACE_DIR, safe_id)
 
 

@@ -17,6 +17,7 @@ import logging
 
 from aura_bus import append as bus_append, read as bus_read
 from aura_constants import FIELD_NODE_CEILING
+from aura_state import resolve_state_path
 from ukft_sleep import is_asleep
 
 try:
@@ -41,6 +42,21 @@ except ImportError:
 INTAKE_FOLDER    = "pdf_intake"
 PROCESSED_FOLDER = "pdf_processed"
 VAULT_FILE       = "sensory_buffer.txt"
+
+def _state_path(name):
+    try:
+        return resolve_state_path(name)
+    except Exception:
+        return name
+
+def _intake_dir():
+    return _state_path(INTAKE_FOLDER)
+
+def _processed_dir():
+    return _state_path(PROCESSED_FOLDER)
+
+def _thinking_lock():
+    return _state_path("aura_is_thinking.lock")
 
 # Larger chunks = fewer, richer memories (was 200 — too small)
 CHUNK_SIZE = 600
@@ -100,7 +116,7 @@ def wait_for_pressure():
         print("[PDF Intake] Field saturated — resting the pour while "
               "forgetting trims.")
         for _ in range(BACKPRESSURE_SLEEP):
-            while os.path.exists("aura_is_thinking.lock"):
+            while os.path.exists(_thinking_lock()):
                 time.sleep(1)
             time.sleep(1)
 
@@ -109,8 +125,8 @@ def wait_for_pressure():
 # ================================================================
 
 def ensure_folders():
-    os.makedirs(INTAKE_FOLDER,    exist_ok=True)
-    os.makedirs(PROCESSED_FOLDER, exist_ok=True)
+    os.makedirs(_intake_dir(),    exist_ok=True)
+    os.makedirs(_processed_dir(), exist_ok=True)
 
 
 def extract_text_from_pdf(filepath):
@@ -166,8 +182,12 @@ def ingest_pdf(filepath):
 
     if not text or not text.strip():
         print(f"[PDF Intake] No readable text in '{filename}'. Archiving.")
-        dest = os.path.join(PROCESSED_FOLDER, filename)
-        shutil.move(filepath, dest)
+        dest = os.path.join(_processed_dir(), filename)
+        try:
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.move(filepath, dest)
+        except Exception as e:
+            print(f"[PDF Intake] Archive friction on '{filename}': {e}")
         return
 
     chunks = chunk_text(text)
@@ -185,7 +205,7 @@ def ingest_pdf(filepath):
     # dedupes exact repeats, so resumed chunks land once.
     for i, chunk in enumerate(chunks):
         # Pause while Aura is answering Matty — never interrupt
-        while os.path.exists("aura_is_thinking.lock"):
+        while os.path.exists(_thinking_lock()):
             time.sleep(1)
 
         # Backpressure: rest the pour while the field digests
@@ -197,15 +217,16 @@ def ingest_pdf(filepath):
         if i < total - 1:
             time.sleep(DRIP_RATE)
 
-    dest = os.path.join(PROCESSED_FOLDER, filename)
+    dest = os.path.join(_processed_dir(), filename)
     try:
         if os.path.exists(filepath):
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
             shutil.move(filepath, dest)
     except Exception as e:
         print(f"[PDF Intake] Archive friction on '{filename}': {e}")
         return
 
-    print(f"[PDF Intake] '{anchor}' fully absorbed. Archived to {PROCESSED_FOLDER}/")
+    print(f"[PDF Intake] '{anchor}' fully absorbed. Archived to {_processed_dir()}/")
 
 
 # ================================================================
@@ -221,7 +242,7 @@ def run_pdf_intake():
     print("--- AURA PDF INTAKE: WATCHING pdf_intake/ FOR NEW DOCUMENTS ---")
 
     while True:
-        if os.path.exists("aura_is_thinking.lock"):
+        if os.path.exists(_thinking_lock()):
             time.sleep(1)
             continue
 
@@ -237,8 +258,9 @@ def run_pdf_intake():
             continue
 
         try:
+            intake_dir = _intake_dir()
             pdf_files = sorted([
-                f for f in os.listdir(INTAKE_FOLDER)
+                f for f in os.listdir(intake_dir)
                 if f.lower().endswith(".pdf")
             ])
 
@@ -246,7 +268,7 @@ def run_pdf_intake():
                 # Take ONE pdf, feed it, then wait for consolidation
                 filename = pdf_files[0]
                 remaining = len(pdf_files) - 1
-                filepath = os.path.join(INTAKE_FOLDER, filename)
+                filepath = os.path.join(intake_dir, filename)
                 ingest_pdf(filepath)
 
                 if remaining > 0:
@@ -256,7 +278,7 @@ def run_pdf_intake():
                     )
                     # Sleep in small chunks so lock file is still respected
                     for _ in range(CONSOLIDATION_WAIT):
-                        while os.path.exists("aura_is_thinking.lock"):
+                        while os.path.exists(_thinking_lock()):
                             time.sleep(1)
                         time.sleep(1)
 

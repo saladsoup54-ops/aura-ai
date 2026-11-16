@@ -20,6 +20,7 @@ import sys
 import threading
 
 from aura_constants import CONSOLE_LOG
+from aura_state import resolve_state_path
 
 MIRROR_MAX_BYTES = 1000000  # cap the mirror; keep the newest half past it
 
@@ -31,7 +32,7 @@ class _Tee:
 
     def __init__(self, stream, path):
         self._stream = stream
-        self._path = path
+        self._path = resolve_state_path(path)
 
     def write(self, text):
         try:
@@ -41,6 +42,10 @@ class _Tee:
         if text:
             try:
                 with _lock:
+                    try:
+                        os.makedirs(os.path.dirname(self._path) or ".", exist_ok=True)
+                    except Exception:
+                        pass
                     with open(self._path, "a", encoding="utf-8",
                               errors="replace") as f:
                         f.write(text)

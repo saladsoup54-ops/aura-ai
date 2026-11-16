@@ -31,6 +31,7 @@ import random
 
 from aura_bus import read as bus_read
 from aura_constants import D_INVARIANT
+from aura_state import resolve_state_path as _sp
 from aura_vault_io import iter_anchors, is_junk_text
 
 # ── FILE PATHS ────────────────────────────────────────────────────────────────
@@ -492,7 +493,7 @@ def run_inner_monologue():
             # ── 1. SKIP IF AURA IS ACTIVELY RESPONDING ───────────────────────
             # Don't generate idle thoughts while Matty's message is being
             # processed — the CMB anchor is protecting that context.
-            if os.path.exists("aura_is_thinking.lock"):
+            if os.path.exists(_sp("aura_is_thinking.lock")):
                 time.sleep(CYCLE_SECONDS)
                 continue
 

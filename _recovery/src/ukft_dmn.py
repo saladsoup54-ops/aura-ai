@@ -1,6 +1,7 @@
 import os
 import time
 from aura_field import FIELD
+from aura_state import resolve_state_path as _sp
 
 IDLE_THRESHOLD  = 45.0   # Seconds before Aura starts day-dreaming
 IDLE_PULSE      = 0.1    # warm-up strength at zero activation
@@ -40,8 +41,9 @@ def run_default_mode_network():
         time.sleep(5)
 
         try:
-            if os.path.exists(LAST_INPUT_FILE):
-                with open(LAST_INPUT_FILE, "r") as f:
+            lf = _sp(LAST_INPUT_FILE)
+            if os.path.exists(lf):
+                with open(lf, "r") as f:
                     last_time = float(f.read().strip())
             else:
                 last_time = time.time()
@@ -51,7 +53,7 @@ def run_default_mode_network():
         idle_time = time.time() - last_time
 
         # Activate DMN if idle and not actively processing
-        if idle_time > IDLE_THRESHOLD and not os.path.exists("aura_is_thinking.lock") \
+        if idle_time > IDLE_THRESHOLD and not os.path.exists(_sp("aura_is_thinking.lock")) \
                 and time.time() >= _next_eligible:
 
             # Retrieve the most active nodes in the field

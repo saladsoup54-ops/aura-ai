@@ -15,7 +15,15 @@ import hashlib
 import os
 import re
 
+from aura_state import resolve_state_path
+
 VAULT_FILE = "locked_patterns.txt"
+
+def _p(path):
+    try:
+        return resolve_state_path(path)
+    except Exception:
+        return path
 
 # In-memory hash index for append-side deduplication.
 _seen_hashes = set()
@@ -69,6 +77,7 @@ def iter_anchors(path=VAULT_FILE):
     """
     Yield (concept, data, source) for every memory record in the vault.
     """
+    path = _p(path)
     if not os.path.exists(path):
         return
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
@@ -190,6 +199,7 @@ def ensure_hash_index(path=VAULT_FILE):
     hardening found this under stress.
     """
     global _seen_hashes
+    path = _p(path)
     try:
         st = os.stat(path)
     except OSError:
@@ -213,6 +223,7 @@ def append_anchor(path, concept, data, source="MANIFEST", dedup=True):
     """
     from aura_bus import locked as bus_locked
     from aura_state import deny_live_write
+    path = _p(path)
     deny_live_write(path)
 
     concept = " ".join(concept.replace("_", " ").replace("-", " ").split())
@@ -224,6 +235,10 @@ def append_anchor(path, concept, data, source="MANIFEST", dedup=True):
             if key in _seen_hashes:
                 return False
         try:
+            try:
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+            except Exception:
+                pass
             with open(path, "a", encoding="utf-8") as f:
                 f.write(f"ANCHOR: {concept} | DATA: {data} | SOURCE: {source}\n")
         except Exception as e:
@@ -258,32 +273,56 @@ def compact_vault(path=VAULT_FILE, legacy_path="locked_patterns_legacy.txt"):
     old vault intact, never a truncation.
     """
     from aura_bus import locked as bus_locked
+    from aura_state import deny_live_write
+
+    path = _p(path)
+    if legacy_path is not None:
+        legacy_path = _p(legacy_path)
+    deny_live_write(path)
+    if legacy_path:
+        deny_live_write(legacy_path)
 
     with bus_locked(path):
         records = {}
         noise = []
-        with open(path, "r", encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                parsed = parse_vault_line(line)
-                if parsed:
-                    concept, data, source = parsed
-                    key = hash_key(concept, data)
-                    if key not in records:
-                        records[key] = (concept, data, source)
-                elif line.strip():
-                    noise.append(line)
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    parsed = parse_vault_line(line)
+                    if parsed:
+                        concept, data, source = parsed
+                        key = hash_key(concept, data)
+                        if key not in records:
+                            records[key] = (concept, data, source)
+                    elif line.strip():
+                        noise.append(line)
 
         if legacy_path and noise:
+            try:
+                os.makedirs(os.path.dirname(legacy_path), exist_ok=True)
+            except Exception:
+                pass
             with open(legacy_path, "a", encoding="utf-8",
                       errors="ignore") as lf:
                 lf.writelines(noise)
 
         tmp_path = path + ".compact_tmp"
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+        except Exception:
+            pass
         with open(tmp_path, "w", encoding="utf-8") as f:
             f.write("--- AURA SOVEREIGN VAULT (v2 CANONICAL) ---\n")
             for concept, data, source in records.values():
                 f.write(f"ANCHOR: {concept} | DATA: {data} | "
                         f"SOURCE: {source}\n")
         os.replace(tmp_path, path)
+
+    # refresh index to reflect rewritten vault
+    try:
+        st = os.stat(path)
+        _index_state.update({"loaded": True, "size": st.st_size, "mtime": st.st_mtime})
+    except Exception:
+        _index_state.update({"loaded": False})
 
     return {"records": len(records), "noise_archived": len(noise)}

@@ -4631,7 +4631,8 @@ class SovereignEgo:
                 from ukft_roleplay import _people_line as _pl, \
                     _current_person_line as _cpl, _self_person_line as _spl
                 try:
-                    with open("people.txt", "r", encoding="utf-8") as f:
+                    from aura_state import resolve_state_path as _rsp
+                    with open(_rsp("people.txt"), "r", encoding="utf-8") as f:
                         people_text = f.read()
                 except OSError:
                     people_text = ""

@@ -67,8 +67,14 @@ def _lock_status(root: str) -> Dict:
 
 def _state_files(root: str) -> List[Dict]:
     rows = []
+    asset_names = {"gf_boundaries.md", "boundaries.md"}
     for name in WATCH_FILES:
         path = os.path.join(root, name)
+        if not os.path.exists(path) and name in asset_names:
+            try:
+                path = aura_state.asset_path(name)
+            except Exception:
+                path = os.path.join(root, name)
         if not os.path.exists(path):
             rows.append({"file": name, "exists": False})
             continue
@@ -76,6 +82,7 @@ def _state_files(root: str) -> List[Dict]:
         rows.append({
             "file": name,
             "exists": True,
+            "path": path,
             "bytes": stat.st_size,
             "modified": time.strftime("%Y-%m-%d %H:%M:%S",
                                       time.localtime(stat.st_mtime)),

@@ -110,7 +110,7 @@ def run_synapse_cycle():
     wiki_headers = {"User-Agent": "AuraCognitionSystem/1.1 (Learning Project)"}
 
     while True:
-        if os.path.exists("aura_is_thinking.lock"):
+        if os.path.exists(_sp("aura_is_thinking.lock")):
             time.sleep(1)
             continue
 

@@ -18,6 +18,7 @@ import time
 
 from aura_constants import DISCOVERIES
 from aura_field import FIELD
+from aura_state import resolve_state_path as _sp
 from aura_vault_io import SEED_STOP
 
 # Identity terms are her, not her reading — they must never serve as
@@ -50,7 +51,7 @@ class DiscoveryEngine:
         if self.temporal is None:
             from ukft_temporal_lobe import TemporalLobe
             lobe = TemporalLobe()
-            if os.path.exists("temporal_links.txt"):
+            if os.path.exists(_sp("temporal_links.txt")):
                 try:
                     lobe.load()
                 except Exception:
