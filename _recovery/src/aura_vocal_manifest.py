@@ -2,6 +2,7 @@ import os
 import time
 
 from aura_constants import VAULT_FILE, CORTEX_PATH
+from aura_state import resolve_state_path as _sp
 
 
 class FileTail:

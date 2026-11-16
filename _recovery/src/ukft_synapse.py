@@ -13,6 +13,7 @@ import hashlib
 from collections import deque
 
 from aura_bus import append as bus_append, read as bus_read
+from aura_state import resolve_state_path as _sp
 from ukft_sleep import is_asleep
 
 try:

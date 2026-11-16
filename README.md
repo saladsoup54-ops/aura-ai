@@ -36,14 +36,27 @@ The rescued Python files in this snapshot were verified against evidence from th
 
 ## Try it (Linux)
 
-The working copy is in `_recovery/src/`:
+The working copy is in `_recovery/src/`.
 
+### Dependencies
+- **Full setup tutorial:** see [`SETUP.md`](SETUP.md) for a step-by-step Ubuntu/Debian install, including the optional local mouth model.
+- **Python:** Python 3 (standard library covers most modules).
+- **System packages (recommended on Ubuntu/Debian):** `python3-tk` for the chat UI (Tkinter), and `espeak-ng` for voice. Optional feature packages (names can vary by release): `python3-requests`, `python3-bs4`, `python3-pypdf`, `python3-pygame`.
+  ```bash
+  sudo apt update
+  sudo apt install python3-tk python3-requests python3-bs4 python3-pypdf python3-pygame espeak-ng
+  ```
+- **Python packages (pip):** listed in [`requirements.txt`](requirements.txt) (also in `_recovery/src/requirements.txt`). On modern Ubuntu/Debian, avoid `pip install` into system Python (PEP 668) — prefer apt packages above, or install into a virtual environment:
+  ```bash
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.txt
+  ```
+  If you use a venv, activate it before launching Aura (and configure any one-click launcher to use it).
+
+### Run
 ```bash
 cd _recovery/src
-
-# optional, for the chat window and the 3D brain viewer:
-sudo apt install python3-tk
-pip install pygame
 
 ./Launch_Aura.sh            # start Aura + chat window
 ./Launch_Aura.sh --view     # start Aura + chat window + 3D view
@@ -52,7 +65,7 @@ pip install pygame
 python3 aura_diagnostic.py  # read-only health report (uses the active state root)
 ```
 
-> Depending on your system you may also want `espeak-ng` for voice and standard Python 3 (with Tk/optional deps for UI). If something doesn’t start, that’s useful information — please tell us.
+> Missing optional dependencies usually disable/fallback specific features (e.g. web intake, PDF intake, 3D view) rather than preventing a basic boot, but if something doesn’t start, that’s useful information — please tell us.
 
 ## Where Aura keeps her state/memory (working copy)
 

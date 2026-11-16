@@ -1,10 +1,20 @@
-# Core/optional Python dependencies for the Aura working tree (_recovery/src).
-# Install with:  pip install -r requirements.txt
+# Full step-by-step setup tutorial: ../../SETUP.md
+# Python dependencies for Aura (working copy: _recovery/src)
+# On modern Ubuntu/Debian, avoid `pip install` into system Python (PEP 668).
+# Prefer apt packages for system Python, or use a virtual environment.
 #
-# Standard library covers most modules. Extras enable specific features:
-requests>=2.31        # web/synapse fetching (ukft_synapse, ukft_directed_synapse)
-beautifulsoup4>=4.12  # HTML parsing for synapse/web intake (optional; falls back if missing)
-pypdf>=4.0            # PDF intake (ukft_pdf_intake; optional)
-pygame>=2.5           # 3D synapse viewer (aura_synapse_view.py; optional)
+# System packages (apt, recommended for "one click"/system Python):
+#   sudo apt install python3-tk python3-requests python3-bs4 python3-pypdf python3-pygame espeak-ng
+#   (package names/availability can vary by Ubuntu release)
+#
+# Pip/venv install:
+#   pip install -r requirements.txt
 
-# System packages (not pip): python3-tk for the chat UI (Tkinter), espeak-ng for voice on Linux.
+# Core (used by web/synapse features)
+requests>=2.31
+
+# Optional features (Aura falls back or disables features if missing)
+beautifulsoup4>=4.12  # HTML parsing for web/synapse intake
+pypdf>=4.0            # PDF intake (ukft_pdf_intake)
+pygame>=2.5           # 3D synapse viewer (aura_synapse_view.py)
+
